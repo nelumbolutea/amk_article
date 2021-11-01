@@ -1,9 +1,8 @@
 # amk_article
-Codes for AMK analysis
+Codes and commands for Ata analysis
 
 Biased expression between LF and MF:
-
-1. Transcriptomes.txt
+1.Transcriptomes.txt
 
 Subgenome fractionation tests between LF and MF:
 2.SubgenomeFractionation.txt
@@ -16,3 +15,4 @@ Synteny retention rate variation among monocots, when compared to 3 outgroup spe
 
 Copy number difference tests of ortholog groups between monocots and dicots:
 5.OG_copyNum_compare.txt 
+
