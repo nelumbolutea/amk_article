@@ -1,0 +1,43 @@
+###intraspecific synteny Acorus###
+python -m jcvi.compara.catalog ortholog --dbtype prot --no_strip_names ata ata
+
+###interspecific synteny###
+python -m jcvi.compara.catalog ortholog --dbtype prot --no_strip_names nnu ata
+python -m jcvi.compara.catalog ortholog --dbtype prot --no_strip_names nnu cesu
+...
+
+###synteny depth######
+python -m jcvi.compara.synteny depth --histogram nnu.ata.anchors
+python -m jcvi.compara.synteny depth --histogram nnu.Zmarina.anchors
+
+python -m jcvi.compara.synteny depth nnu.ata.anchors --depthfile=nnu.ata.anchors.depth
+python -m jcvi.compara.synteny depth nnu.Zmarina.anchors --depthfile=nnu.Zmarina.anchors.depth
+sort -u -k1,1 --merge | sort -k2,2gr |  awk '{print $2}'> ckan.Zmarina.lifted.anchors.block.size
+
+
+####summarize nnu/ncol/ckan gene synteny retention in monocots###
+grep "evm" nnu.ata.lifted.anchors | awk '{print $1}' | sort -u | wc -l
+
+####calculate block size (number of anchors per syntenic block)##
+
+####add blockID script:z_add_blockID.pl###
+open(IN,"$ARGV[0]");
+open(OUT,">$ARGV[0].block");
+$n=0;
+while(<IN>)
+ {chomp;
+  if($_=~/#/)
+  {$n++;
+   $l=0;
+  }
+  else{$l++;
+       print OUT "$ARGV[0]_$n\t$l\t$_\n";
+      }
+ }
+############
+
+##for example nnu vs. ata block sizes####
+perl z_add_blockID.pl nnu.ata.lifted.anchors
+
+sort -k1,1 -k2,2gr nnu.ata.lifted.anchors.block | sort -u -k1,1 --merge | sort -k2,2gr |  awk '{print $2}'> nnu.ata.lifted.anchors.block.size
+

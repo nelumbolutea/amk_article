@@ -1,0 +1,122 @@
+#########Transposon density in gene and flanking regions####
+###TE for gene & +/-2kb###
+
+###gene body TE##########
+
+awk '{print $1"\t"$2}' scp_new.fasta.fai>scp_new.fasta.genomesize
+
+awk '{print $1"\t"$4"\t"$5"\t"$9"\t.\t"$7}' ata.gene.gff3>ata.gene.bed 
+
+bedtools flank -i ata.gene.bed  -g scp_new.fasta.genomesize -l 2000 -r 0 -s | awk '{if ($2 - $3 != 0) print $0}'>  ata.gene.2kbup.bed 
+bedtools flank -i ata.gene.bed  -g scp_new.fasta.genomesize -l 0 -r 2000 -s | awk '{if ($2 - $3 != 0) print $0}'>  ata.gene.2kbdown.bed 
+
+grep "+" ata.gene.2kbup.bed >ata.gene.2kbup.plus.bed
+grep "-" ata.gene.2kbup.bed >ata.gene.2kbup.minus.bed
+grep "+" ata.gene.2kbdown.bed >ata.gene.2kbdown.plus.bed
+grep "-" ata.gene.2kbdown.bed >ata.gene.2kbdown.minus.bed
+
+
+
+####100-bp sliding window,10 bp step for TE ratio coverage###
+####excluding those with codingregion of neighboring genes###
+####Divide the bed into sliding (=overlapping) windows of 100bp, with 10bp step overlap####
+
+###upstream 2kb###
+###plus & -reverse near to far:_1,_2,_3, ...###
+bedtools makewindows -reverse -b ata.gene.2kbup.plus.bed  -w 100 -s 10 -i srcwinnum>ata.gene.2kbup.plus.100.10.bed
+###minus near to far:_1,_2,_3, ...###
+bedtools makewindows -b ata.gene.2kbup.minus.bed  -w 100 -s 10 -i srcwinnum>ata.gene.2kbup.minus.100.10.bed
+
+###downstream 2kb###
+###plus near to far:_1,_2,_3, ...###
+bedtools makewindows -b ata.gene.2kbdown.plus.bed  -w 100 -s 10 -i srcwinnum>ata.gene.2kbdown.plus.100.10.bed
+###minus near to far:_1,_2,_3, ...###
+bedtools makewindows -reverse  -b ata.gene.2kbdown.minus.bed  -w 100 -s 10 -i srcwinnum>ata.gene.2kbdown.minus.100.10.bed
+
+cat ata.gene.2kbdown.minus.100.10.bed ata.gene.2kbdown.plus.100.10.bed > ata.gene.2kbdown.100.10.bed
+cat ata.gene.2kbup.minus.100.10.bed ata.gene.2kbup.plus.100.10.bed >ata.gene.2kbup.100.10.bed
+
+
+###TE coverage for gene and flanking regions###
+bedtools annotate  -both -i ata.gene.2kbdown.100.10.bed -files scp_new.fasta.mod.EDTA.TEanno.gff >ata.gene.2kbdown.100.10.TEcov.bed
+bedtools annotate  -both -i ata.gene.2kbup.100.10.bed -files scp_new.fasta.mod.EDTA.TEanno.gff >ata.gene.2kbup.100.10.TEcov.bed
+bedtools annotate  -both -i ata.gene.40bin.bed -files scp_new.fasta.mod.EDTA.TEanno.gff >ata.gene.40bin.TEcov.bed
+
+
+
+########bulk sum TE density####
+###$0 genelist TEcov ##
+###gene list###
+open(GENE,"$ARGV[0]");
+while(<GENE>)
+ {chomp;
+  $gene{$_}=1;
+ }
+
+open(COV,"$ARGV[1]");
+while(<COV>)
+ {chomp;
+  @arr=split(/\t/,$_);
+  $gene=$arr[3];
+  @n=split(/_/,$gene);
+  $gg=$n[0];
+  $part=$n[1];
+  if($gene{$gg})
+  {open(OUT,">>$ARGV[1].$ARGV[0].p$part");
+   print OUT "$_\n";
+  }
+ 
+ }
+#########################
+
+###in put gene IDs in MF and LF###
+vi MFlist
+vi LFlist
+
+###perform coverage overlap####
+perl z_print_splitTEcov.pl MFlist ata.gene.40bin.TEcov.bed
+perl z_print_splitTEcov.pl LFlist ata.gene.40bin.TEcov.bed
+
+perl z_print_splitTEcov.pl MFlist ata.gene.2kbdown.100.10.TEcov.bed
+perl z_print_splitTEcov.pl LFlist ata.gene.2kbdown.100.10.TEcov.bed
+
+perl z_print_splitTEcov.pl MFlist ata.gene.2kbup.100.10.TEcov.bed
+perl z_print_splitTEcov.pl LFlist ata.gene.2kbup.100.10.TEcov.bed
+
+
+###Sum coverage####
+mkdir genebodyMF
+mkdir upstreamMF
+mkdir downstreamMF
+
+mkdir genebodyLF
+mkdir upstreamLF
+mkdir downstreamLF
+
+mv *40bin.TEcov.bed*MF* genebodyMF
+mv *2kbup.100.10.TEcov.bed*MF* upstreamMF
+mv *2kbdown.100.10.TEcov.bed*MF* downstreamMF
+
+mv *40bin.TEcov.bed*LF* genebodyLF
+mv *2kbup.100.10.TEcov.bed*LF* upstreamLF
+mv *2kbdown.100.10.TEcov.bed*LF* downstreamLF
+
+
+awk '{sum+=$6} END {print sum/NR}' ata.gene.40bin.TEcov.bed.LFlist.p1
+
+cd /new_disk12T_1/tao/scp/TEdensity/genebodyLF
+ls *p*>z_genebodyLFlist
+cp z_genebodyLFlist z_genebodyLFlist.sh
+vi z_genebodyLFlist.sh
+:%s/^/awk '{sum+=$6} END {print sum\/NR}' /g
+
+
+ls */*p*>z_all_partlist
+
+cp z_all_partlist z_all_partlist.sh
+vi z_all_partlist.sh
+:%s/^/awk '{sum+=$6} END {print sum\/NR}' /g
+:wq
+
+sh z_all_partlist.sh >z_all_partlist.average
+paste z_all_partlist z_all_partlist.average>z_all_partlist.average.txt

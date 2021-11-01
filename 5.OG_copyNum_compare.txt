@@ -1,0 +1,15 @@
+###bulk wilcox.test (u test) in R for copy number differences between dicots and monocots###
+
+X=read.delim("allOGcount.txt",header=T)
+names(results)
+
+###bulk chisq.test###
+p<-c()
+for (i in 1:30511){
+   results<-wilcox.test(as.numeric(X[i,1:8]),as.numeric(X[1,9:20]))
+   p<-c(p,results$p.value)
+ }
+
+write.table(p, file="allOGcount.wilcox.test.pvalue.txt", sep="\t", row.names=F)
+
+

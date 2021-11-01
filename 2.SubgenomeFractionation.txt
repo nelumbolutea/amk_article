@@ -1,0 +1,130 @@
+####Subgenome fractionation of Acorus###
+###block gff####
+perl z_add_blockID.pl ata.ata.anchors 
+
+###anchor number per block###
+sort -k1,1 -k2,2gr  ata.ata.anchors.block  | sort -u -k1,1 --merge > ata.ata.anchors.block.size
+
+##annotate gene coordinated###
+##open bed##
+open(IN,"$ARGV[0]");
+while(<IN>)
+{ chomp;
+  @arr=split(/\t/,$_);
+  $chr{$arr[3]}=$arr[0];
+  $le{$arr[3]}=$arr[1];
+  $ri{$arr[3]}=$arr[2];
+}
+
+###open block###
+open(BL,"$ARGV[1]");
+open(OUT,">$ARGV[1].pos");
+while(<BL>)
+{ chomp;
+  @arr=split(/\t/,$_);
+  $pair=$arr[0];
+  $gene1=$arr[2];
+  $gene2=$arr[3];
+ 
+   
+  print OUT "$pair\-block.A\t$gene1\tleft\t$chr{$gene1}\t$le{$gene1}\n" ;
+  print OUT "$pair\-block.A\t$gene1\tright\t$chr{$gene1}\t$ri{$gene1}\n" ;
+  print OUT "$pair\-block.B\t$gene2\tleft\t$chr{$gene2}\t$le{$gene2}\n" ;
+  print OUT "$pair\-block.B\t$gene2\tright\t$chr{$gene2}\t$ri{$gene2}\n" ;
+}
+######################## 
+
+perl z_block_position.pl ata.bed ata.ata.anchors.block
+
+sort -k1,1 -k5,5g ata.ata.anchors.block.pos  | sort -u -k1,1 --merge >ata.ata.anchors.block.pos.left
+sort -k1,1 -k5,5gr ata.ata.anchors.block.pos  | sort -u -k1,1 --merge >ata.ata.anchors.block.pos.right
+
+paste ata.ata.anchors.block.pos.left ata.ata.anchors.block.pos.right | awk '{print $4"\t"$5"\t"$10"\t"$1}' >ata.ata.anchors.block.mpos.bed
+
+###annotate the gene gff with block.bed#######
+bedtools intersect -a ata.bed -wb -b ata.ata.anchors.block.mpos.bed>ata.blockAB.bed
+
+
+###ata genes with synteny to other monocots or itself are regarded as ancestral gene in the pre-duplicated block####
+python -m jcvi.compara.catalog ortholog --dbtype prot --no_strip_names ata aco
+...
+
+
+
+cat ata.aco.anchors ata.aof.anchors ... ata.ata.anchors  | grep -v "#" >ata_self_otherMonocots.anchors
+
+####hash ancestral anchors####
+##open anchors##
+open(IN,"$ARGV[0]");
+while(<IN>)
+{ chomp;
+  @arr=split(/\t/,$_);
+  $anchor{$arr[0]}=1;
+  $anchor{$arr[1]}=1;
+}
+
+###open bed###
+open(BL,"$ARGV[1]");
+open(OUT,">$ARGV[1].anc.bed");
+while(<BL>)
+{ chomp;
+  @arr=split(/\t/,$_);
+  $gene=$arr[3];
+  if($anchor{$gene})
+  {
+  print OUT "$_\tancestral\n" ;
+  }
+  else{print OUT "$_\trecent\n" ;
+      }
+}
+########################
+
+
+perl z_annotate_ancestral.pl ata_self_otherMonocots.anchors ata.blockAB.bed
+
+
+grep "ancestral" ata.blockAB.bed.anc.bed>ata.blockAB.bed.anc.anc.bed
+grep "recent" ata.blockAB.bed.anc.bed>ata.blockAB.bed.anc.rec.bed
+
+awk -F '\t'  '{a[$10]++}  END{for(i in a)print i "\t"  a[i]}' ata.blockAB.bed.anc.anc.bed | sort -k1,1>ata.blockAB.bed.anc.anc.bed.count
+awk -F '\t'  '{a[$10]++}  END{for(i in a)print i "\t"  a[i]}' ata.blockAB.bed.anc.rec.bed | sort -k1,1>ata.blockAB.bed.anc.rec.bed.count
+
+
+#############determining LF,MF################
+
+X=read.delim("chisqtest.txt",header=F)
+
+names(results)
+
+###bulk chisq.test###
+p<-c()
+for (i in 1:114){
+   a<-as.matrix(X[i,2:3])
+   b<-as.matrix(X[i,4:5])   
+
+   results <- chisq.test(rbind(a,b),simulate.p.value=T,B=100000)
+   p<-c(p,results$p.value)
+ }
+
+
+write.table(p, file="chisqdata.pvalue", sep="\t", row.names=F)
+
+
+#############determining LF,MF without 'B='################
+
+X=read.delim("chisqtest.txt",header=F)
+
+names(results)
+
+###bulk chisq.test###
+p<-c()
+for (i in 1:114){
+   a<-as.matrix(X[i,2:3])
+   b<-as.matrix(X[i,4:5])   
+
+   results <- chisq.test(rbind(a,b))
+   p<-c(p,results$p.value)
+ }
+
+
+write.table(p, file="chisqdatanoB.pvalue", sep="\t", row.names=F)

@@ -1,0 +1,19 @@
+###histat2 stringtie for Acorus gene expression, with laoye (RNA-seq) as an example#
+
+hisat2-build –p 8 scp_new.fasta scp_new.fasta.rename
+
+samtools faidx scp_new.fasta 
+
+hisat2 -p 8 --dta -x scp_new.fasta.rename -1 4-shi-L-laoye-B_FRAS190068871-1a_1.clean.fq.gz  -2 4-shi-L-laoye-B_FRAS190068871-1a_2.clean.fq.gz  -S laoye.sam
+
+samtools view -@ 8 -bS -t scp_new.fasta.fai laoye.sam > laoye.bam
+
+samtools sort -@ 10 laoye.bam -o laoye.sorted.bam
+
+samtools index laoye.sorted.bam
+
+stringtie -p 8 -o laoye.sorted.gtf laoye.sorted.bam
+
+stringtie --merge -p 12 -G last_evm.gff3 -o nenyelaoyeroot_merged.gtf z_gtf_list
+ 
+stringtie laoye.sorted.bam -G ata.gff3 -o laoye_stringtie.gtf -e -p 20 -A laoye_gene
