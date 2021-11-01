@@ -1,4 +1,4 @@
-# amk_article
+# AMK_article
 Codes and commands for Ata genome analysis
 
 Biased expression between LF and MF:
