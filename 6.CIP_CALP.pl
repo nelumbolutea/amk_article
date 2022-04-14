@@ -1,5 +1,5 @@
-use warnings;
-use strict;
+###Parsing blast results with CIP and CALP paremeters for conserved gene pairs for ancestral karyotype study###
+###usage: $0 blast.output > CIP_CALP.out###
 use Bio::SearchIO;
 
 my $infile  = shift;
