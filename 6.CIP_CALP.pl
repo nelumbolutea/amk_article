@@ -1,4 +1,5 @@
 ###Parsing blast results with CIP and CALP paremeters for conserved gene pairs for ancestral karyotype study###
+###CIP >=50%, CALP >=50%###
 ###usage: $0 blast.output > CIP_CALP.out###
 use Bio::SearchIO;
 
