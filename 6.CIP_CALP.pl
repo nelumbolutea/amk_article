@@ -1,24 +1,25 @@
-###Parsing blast results with CIP and CALP paremeters for conserved gene pairs for ancestral karyotype study###
-###CIP >=50%, CALP >=50%###
-###usage: $0 blast.output > CIP_CALP.out###
+#####filter blastp output for ancestral karyotype analysis by CIP & CALP parameters###
+#####Both CIP CALP should >=0.5###
+##e.g.##
+##makeblastdb -in species2.pep  -dbtype prot -out species2.pep.db##
+##blastp -query species1.pep -db species2.pep.db -num_threads 12 -evalue 1E-5 -outfmt 0  -out species1-species2.blastout###
+##perl cip_calp.pl species1-species2.blastout>species1-species2.blastout.filtered###
+
 use Bio::SearchIO;
 
-my $infile  = shift;
+my $blastout  = shift;
 
-my $parser = Bio::SearchIO->new(-file   => $infile,
+my $filter = Bio::SearchIO->new(-file   => $blastout,
                                 -format => 'blast');
-while( my $result = $parser->next_result ) {
-    print "Query: ",$result->query_name,"\tlength: ",$result->query_length,
-          "\tnumber of hits: ",$result->num_hits,"\n";
+print "Query\tlength_Q\tnumber_of_hits\tHit\tlength_H\te-value\tCIP\tCALP\n";				  
+while( my $result = $filter->next_result ) {
+    
     while(my $hit=$result->next_hit){
-        print "\tHit: ",$hit->name,"\tlength: ",$hit->hit_length,
-                  "\te-value: ",$hit->significance,"\n";
+	 
         my $al=0;
         my @id=();
         while(my $hsp=$hit->next_hsp){
-            print "\t\tHsp length: ",$hsp->hsp_length,"\tID length: ",
-                          $hsp->num_identical,"\t idenity: ",
-                          $hsp->percent_identity,"\n";
+
             $al=$al+($hsp->hsp_length);
             my $ai=($hsp->num_identical)/($hsp->hsp_length);
             push @id,$ai;
@@ -28,6 +29,9 @@ while( my $result = $parser->next_result ) {
             $cip=$cip+($_/$al*100);
             }
         my $calp=$al/($result->query_length);
-        print "\tcip: ",$cip,"\tcalp: ",$calp,"\n";
+	  if($cip ge 0.5 and $calp ge 0.5)
+	  {
+	  print $result->query_name,"\t",$result->query_length,"\t",$result->num_hits,"\t",$hit->name,"\t",$hit->hit_length,"\t",$hit->significance,"\t",$cip,"\t",$calp,"\n";	
+	  }
     }
 }
