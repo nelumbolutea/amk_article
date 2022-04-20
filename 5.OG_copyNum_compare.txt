@@ -5,8 +5,8 @@ names(results)
 
 ###bulk chisq.test###
 p<-c()
-for (i in 1:30511){
-   results<-wilcox.test(as.numeric(X[i,1:8]),as.numeric(X[1,9:20]))
+for (i in 1:22500){
+   results<-wilcox.test(as.numeric(X[i,1:16]),as.numeric(X[i,17:28]))
    p<-c(p,results$p.value)
  }
 
