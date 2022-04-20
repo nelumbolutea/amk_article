@@ -26,7 +26,7 @@ Codes and commands for Ata genome analysis
 6.CIP_CALP.pl
 
 
-#workflow of tools and parameters in ancestral karyotype reconstruction
+#workflow from one-to-one conserved ortholog (protogenes), syntenic blocks (SBs) to protochromosomes (CARs)
 
 7.AncestralKaryotype_workflow.txt
 
