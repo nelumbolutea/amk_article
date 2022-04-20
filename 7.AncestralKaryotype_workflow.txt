@@ -1,4 +1,4 @@
-###Workflow for Ancestral Karyotype Reconstruction###
+###Workflow for Ancestral Karyotype Reconstruction (protogenes->CARs)###
 
 ###Reciprocal BLASTP for homolog search among all species pairs###
 ###alternatively, you can use DIAMOND for accelerated homology search####
@@ -23,10 +23,7 @@ perl 6.CIP_CALP.pl species1-species2.blastout >species1-species2.blastout
 ./MCScanX species1_species2
 
 ###Build Syntenic blocks (SBs) among species using one-to-one conserved orthologs###
-###alternatively, use DRIMM-synteny####
-###http://grimm.ucsd.edu/DIST/ ###
 ###sharing more than 5 orthologous genes with '-m 6'###
-###install DRIMM-synteny###
 wget http://grimm.ucsd.edu/DIST/GRIMM_SYNTENY-2.02.zip
 unzip GRIMM_SYNTENY-2.02.zip
 cd GRIMM_SYNTENY-2.02
@@ -57,11 +54,3 @@ sudo make install
 mkdir MRCA_CARs
 mgra -c MRCA.cfg -g mgr_macro.txt -o MRCA_CARs
 ###Linear arrangement of SBs on MRCA chromosomes (ancestral karyotype, CARs) can be found in '~/mgra/MRCA_CARs/genomes/MRCA.gen'###
-
-
-###Dotplot validations of MRCA CARs aligning to modern species chromosomes can be obtained such as tools JCVI###
-###https://github.com/tanghaibao/jcvi ####
-python -m jcvi.graphics.dotplot MRCA.species1.anchors
-
-###Summarize the minimum fissions and fusions of SBs from 'MRCA.gen' CARs into descendant species chromosomes following parsimony model###
-##see Supplementary Table S5,Supplementary Figure S15###
