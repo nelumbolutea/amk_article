@@ -1,0 +1,89 @@
+###Workflow for Ancestral Karyotype Reconstruction (protogenes->CARs)###
+
+###Reciprocal BLASTP for homolog search among all species pairs###
+###alternatively, you can use DIAMOND for accelerated homology search####
+#diamond makedb --in species1.pep -d species.pep.db
+#diamond blastp  -q species1.pep -d species2.pep.db -o species1-species2.blastout --evalue 1E-5  --threads 8 --max-target-seqs 6 -outfmt 0
+makeblastdb -in species2.pep  -dbtype prot -out species2.pep.db
+blastp -query species1.pep -db species2.pep.db -num_threads 12 -evalue 1E-5 -max-target-seqs 6 -outfmt 0 -out species1-species2.blastout
+
+
+###Use CIP and CALP (>=50%) as threshold parameters to obtain conserved orthologs##
+###see details in Jerome Salse et al., Improved criteria and comparative genomics tool provide new insights into grass paleogenomics, Briefings in Bioinformatics, Volume 10, Issue 6, November 2009, Pages 619–630, https://doi.org/10.1093/bib/bbp037 ####
+###alternatively, use perl script to filter your blast output###
+###https://github.com/nelumbolutea/amk_article/blob/main/6.CIP_CALP.pl ####
+perl 6.CIP_CALP.pl species1-species2.blastout >species1-species2.blastout
+
+###Obtain one-to-one conserved orthologs#####
+###identify and remove tandemly duplicated loci from reciprocal blast gene pairs### 
+###coordinate_file.gff and tabular-format.blastout are required###
+###alternatively use tools such as McScanX for tandem loci detection###
+###https://github.com/wyp1125/MCScanX #########
+###removing tandem loci in 'species1_species2.tandem'for downstream SBs search##
+./MCScanX species1_species2
+
+
+
+###running DRIMM-synteny to search for non-overlapping SBs##
+###
+###1. preparing input.txt based on gff or gff3####
+###delete non-protogenes in gff###
+###asign each protogene in gff to a specific number###
+###transpose protogenes in each chromosome in to lines###
+###"input.txt" file contains all chromosomes of all investigated species###
+###each line represents a chromosome###
+###linear order of protogenes assigned with specific numbers on a chromosomes,e.g.###
+###a sample input.txt####
+1 2 3 5 4 6
+19 7 9 22 11
+7 22 11 9 66
+####################
+
+###2. running SyntenyFast.exe#######
+###download http://bix.ucsd.edu/projects/drimm/SyntenyFastVer1.1.zip and unzip####
+##place "input.txt" in the same directory of "SyntenyFast.exe"#####
+###double click SyntenyFast.exe####
+###Input parameter cycleLengthThreshold (threshold for contiuity of SBs), default 20###
+###Input parameter dustThreshold (threshold for maximum copy number of protogenes)###
+###Setting dustThreshold should not exceed gene copies given total sum of paleopoloidy level
+###dustThreshold is to delete protogenes with excessive duplications####
+###e.g. 1 WGD for Acorus, 2 WGD for Spirodela, 2 WGD for Elaeis  then 2+4+4=10, 1+10 i.e. set dustThreshold to 11 ###
+
+###3. extract SBs###
+###When the run is finished, all SBs are in "synteny.txt"###
+###in "synteny.txt" example below###
+###number before ":" is the SB id, number after ":" is the total number of SBs, then the protogene IDs in the SB##
+1:1 10170 10169 10168 10167 10166 
+2:1 10114 10113 10112 10111 10110 10109
+3:2 10295 10294 10293 
+4:3 14262 14263 14264 14265 14266 14267 
+5:4 10269 10268 10267 10266
+####Only keep SBs with protogenes > 5###
+###in "sequenceColor.txt", each line is original chromosome in input.txt###
+###data is arranged as "protogeneID SB_ID protogeneID SB_ID protogeneID SB_ID ..." as example below###
+9683 0 9684 0 9685 0 9686 0 9687 1 9688 1 9689 1 9690 1 
+###delete protogeneIDs, and merge consecutive SB_IDs in to a single SB_ID as###
+0 1
+###after merging, we then obtain the 'mgr_macro.txt' in grimm format for mgra input###
+
+
+
+###Merge SBs into CARs (protochromosomes)###
+#####alternatively using tools such as MGRA###
+###https://github.com/compbiol/mgra ###
+##to install mgra, make sure CMAKE, gcc, git were installed###
+git clone https://github.com/compbiol/mgra.git
+cd mgra
+sudo mkdir build
+cd build
+sudo cmake ../
+sudo make
+sudo make install
+###Note:change file paths in cmake_install.cmake when errors produced by 'sudo make install'###
+###preparing a config file 'MRCA.cfg' containing both species name list and newick format species tree such as '(A,(D,(B,C))BCD)ABCD'###
+###MRCA aka. Most Recent Common Ancestor###
+###example of config file can be referred to '~/mgra/examples/mam6/sim.cfg'
+###A grimm format file 'mgr_macro.txt' with sytenic blocks (SBs) on species chromosomes is obtained from DRIMM-synteny above###
+mkdir MRCA_CARs
+mgra -c MRCA.cfg -g mgr_macro.txt -o MRCA_CARs
+###Linear arrangement of SBs on MRCA chromosomes (ancestral karyotype, CARs) can be found in '~/mgra/MRCA_CARs/genomes/BCD.gen'###
