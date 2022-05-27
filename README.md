@@ -28,6 +28,6 @@ Codes and commands for Ata genome analysis
 
 #workflow from one-to-one conserved ortholog (protogenes), syntenic blocks (SBs) to protochromosomes (CARs)
 
-7.AncestralKaryotype_workflow.txt
+7.Protogenes_SBs_CARs.txt
 
 
